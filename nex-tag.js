@@ -39,6 +39,35 @@ window.headertag.partnerScopes.push(function() {
      *          - demand: the targeting information returned from this module.
      *
      */
+    var d = document;
+    var SCRIPT = 'script';
+    var PARAMS = 'params';
+    var SIZES = 'sizes';
+    var SIZE = 'size';
+    var CPM = 'cpm';
+    var AD = 'ad';
+    var WIDTH = 'width';
+    var HEIGHT = 'height';
+    var PUB_ZONE = 'pub_zone';
+    var GROSS_PRICE = 'gross_price';
+    var RESOURCE = 'resource';
+    var DETAIL = 'detail';
+    var BIDDER_CODE_RESPONSE_KEY = 'bidderCode';
+    var BIDDER_CODE = 'pubgears';
+    var SCRIPT_ID = 'mbid-header-tag';
+    var ATTRIBUTE_PREFIX = 'data-bsm-';
+    var SLOT_LIST_ATTRIBUTE = 'slot-list';
+    var PUBLISHER_ATTRIBUTE = 'pub';
+    var FLAG_ATTRIBUTE = 'flag';
+    var PLACEMENT_CODE = 'placementCode';
+    var BID_ID = 'bidId';
+    var PUBLISHER_PARAM = 'publisherName';
+    var PUB_ZONE_PARAM = 'pubZone';
+    var BID_RECEIVED_EVENT_NAME = 'onBidResponse';
+    var SLOT_READY_EVENT_NAME = 'onResourceComplete';
+    var CREATIVE_TEMPLATE = decodeURIComponent("%3Cscript%3E%0A(function(define)%7B%0Adefine(function(a)%7B%0A%09var%20id%3D%20%22pg-ad-%22%20%2B%20Math.floor(Math.random()%20*%201e10)%2C%20d%3D%20document%0A%09d.write(\'%3Cdiv%20id%3D%22\'%2Bid%2B\'%22%3E%3C%2Fdiv%3E\')%0A%09a.push(%7B%0A%09%09pub%3A%20\'%25%25PUBLISHER_NAME%25%25\'%2C%0A%09%09pub_zone%3A%20\'%25%25PUB_ZONE%25%25\'%2C%0A%09%09sizes%3A%20%5B\'%25%25SIZE%25%25\'%5D%2C%0A%09%09flag%3A%20true%2C%0A%09%09container%3A%20d.getElementById(id)%2C%0A%09%7D)%3B%0A%7D)%7D)(function(f)%7Bvar%20key%3D\'uber_imps\'%2Ca%3Dthis%5Bkey%5D%3Dthis%5Bkey%5D%7C%7C%5B%5D%3Bf(a)%3B%7D)%3B%0A%3C%2Fscript%3E%0A%3Cscript%20src%3D%22%2F%2Fc.pubgears.com%2Ftags%2Fb%22%3E%3C%2Fscript%3E%0A");
+    var TAG_URL = '//c.mbid.io/tags/h';
+    var publisher = '';
 
     var PARTNER_ID = 'NEXT';
 
@@ -231,25 +260,24 @@ window.headertag.partnerScopes.push(function() {
 
         //? }
 
-        var yourBidder = new Partner(config);
+        var nxtgBidder = new Partner(config);
 
-        window.NexTagHtb = {};
-        window.NexTagHtb.render = yourBidder.renderAd;
+        window.headertag.NexTagHtb = {};
+        window.headertag.NexTagHtb.render = nxtgBidder.renderAd;
 
         window.headertag[PARTNER_ID] = {};
-        window.headertag[PARTNER_ID].callback = yourBidder.responseCallback;
+        window.headertag[PARTNER_ID].callback = nxtgBidder.responseCallback;
 
-        callback(null, yourBidder);
+        callback(null, nxtgBidder);
     }
 
     function Partner(config) {
         var _this = this;
 
-        var __targetingType = config.targetingType;
-        var __supportedAnalytics = SUPPORTED_ANALYTICS;
-        var __supportedOptions = SUPPORTED_OPTIONS;
-
-        var __creativeStore = {};
+        var targetingType = config.targetingType;
+        var supportedAnalytics = SUPPORTED_ANALYTICS;
+        var supportedOptions = SUPPORTED_OPTIONS;
+        var creativeStore = {};
 
         /* =============================================================================
          * Set default targeting keys to be used for DFP. Values for omKey and idKey are
@@ -262,7 +290,7 @@ window.headertag.partnerScopes.push(function() {
          * idKey: ix_(PARTNER ID)_id
          * pmidKey: ix_(PARTNER ID)_dealid
          */
-        var __targetingKeys = {
+        var targetingKeys = {
             omKey: 'ix_next_cpm',
             pmKey: 'ix_next_cpm',
             idKey: 'ix_next_id',
@@ -271,23 +299,23 @@ window.headertag.partnerScopes.push(function() {
 
         if (config.targetKeyOverride) {
             if (config.targetKeyOverride.omKey) {
-                __targetingKeys.omKey = config.targetKeyOverride.omKey;
+                targetingKeys.omKey = config.targetKeyOverride.omKey;
             }
 
             if (config.targetKeyOverride.pmKey) {
-                __targetingKeys.pmKey = config.targetKeyOverride.pmKey;
+                targetingKeys.pmKey = config.targetKeyOverride.pmKey;
             }
 
             if (config.targetKeyOverride.idKey) {
-                __targetingKeys.idKey = config.targetKeyOverride.idKey;
+                targetingKeys.idKey = config.targetKeyOverride.idKey;
             }
 
             if (config.targetKeyOverride.pmidKey) {
-                __targetingKeys.pmidKey = config.targetKeyOverride.pmidKey;
+                targetingKeys.pmidKey = config.targetKeyOverride.pmidKey;
             }
         }
 
-        var __bidTransformer;
+        var bidTransformer;
 
         /* =============================================================================
          * Set the default parameters for interpreting the prices sent by the bidder
@@ -296,7 +324,7 @@ window.headertag.partnerScopes.push(function() {
          * endpoint and expected by the DFP line item targeting. See
          * bid-rounding-transformer.js for more information.
          */
-        var __bidTransformConfig = {        // Default rounding configuration
+        var bidTransformConfig = {        // Default rounding configuration
             "floor": 0,                     // Minimum acceptable bid price
             "inputCentsMultiplier": 100,    // Multiply input bids by this to get cents
             "outputCentsDivisor": 1,        // Divide output bids in cents by this
@@ -312,7 +340,7 @@ window.headertag.partnerScopes.push(function() {
         };
 
         if(config.roundingBuckets){
-            __bidTransformConfig = config.roundingBuckets;
+            bidTransformConfig = config.roundingBuckets;
         }
 
         /* =============================================================================
@@ -321,7 +349,7 @@ window.headertag.partnerScopes.push(function() {
          *
          * var roundedBid = bidTransformer.transformBid(rawBid);
          */
-        __bidTransformer = BidRoundingTransformer(__bidTransformConfig);
+        bidTransformer = BidRoundingTransformer(bidTransformConfig);
 
         /* =============================================================================
          * SECTION E | Copy over the Configurations to Internal Variables
@@ -341,18 +369,26 @@ window.headertag.partnerScopes.push(function() {
         /* -------------------------------------------------------------------------- */
 
         this.getPartnerTargetingType = function getPartnerTargetingType() {
-            return __targetingType;
+            return targetingType;
         };
 
         this.getSupportedAnalytics = function getSupportedAnalytics() {
-            return __supportedAnalytics;
+            return supportedAnalytics;
         };
 
         this.getSupportedOptions = function getSupportedOptions() {
-            return __supportedOptions;
+            return supportedOptions;
         };
+        var proxy = null;
+        var initialized = false;
 
-        function __requestDemandForSlots(htSlotNames, callback){
+        var pubZoneHtSlotMap={};
+        var demand = {};
+        var completed =false;
+
+        function requestDemandForSlots(htSlotNames, callback){
+            //TODO: Timout need to be added
+
 
             /* =============================================================================
              * SECTION F | Request demand from the Module's Ad Server
@@ -388,17 +424,105 @@ window.headertag.partnerScopes.push(function() {
              *         ...
              *     }
              */
-
             /* PUT CODE HERE */
+            var slots = getSlotList(htSlotNames);
+            publisher = config.publisherName;
 
-            /* -------------------------------------------------------------------------- */
+            proxy = proxy || getScript(SCRIPT_ID) || makeScript(slots, publisher, SCRIPT_ID, TAG_URL);
+            if (!initialized)
+            { registerEventListeners(proxy); }
 
+            initialized = true;
+
+            callback(null, demand);
         }
 
+        function getScript(id) {
+            return d.getElementById(id);
+        }
+
+        function registerEventListeners(script) {
+            script.addEventListener(BID_RECEIVED_EVENT_NAME, onBid, true);
+            script.addEventListener(SLOT_READY_EVENT_NAME, onComplete, true);
+        }
+
+        function makeScript(slots, publisher, id, url) {
+            var script = d.createElement(SCRIPT);
+            script.src = url;
+            script.id = id;
+            script.setAttribute(ATTRIBUTE_PREFIX + SLOT_LIST_ATTRIBUTE, slots);
+            script.setAttribute(ATTRIBUTE_PREFIX + FLAG_ATTRIBUTE, 'true');
+            script.setAttribute(ATTRIBUTE_PREFIX + PUBLISHER_ATTRIBUTE, publisher);
+
+            return loadScript(script);
+        }
+
+        function loadScript(script) {
+            var anchor = (function(scripts) {
+                return scripts[ scripts.length - 1 ];
+            })(d.getElementsByTagName(SCRIPT));
+
+            return anchor.parentNode.insertBefore(script, anchor);
+        }
+
+
+        function getSlotList(htSlotNames){
+            var slots=[];
+            htSlotNames.forEach(function(slot){
+                var zoneSlot = getSlotFromXslots(config.mapping[slot]);
+                pubZoneHtSlotMap[zoneSlot.split('@')[0]]=slot;
+                slots.push(zoneSlot);
+            });
+            return slots.join(' ');
+        }
+
+        function getSlotFromXslots(slot){
+            var result=[];
+            slot.forEach(function(sl){
+                var xSlot = config.xSlots[sl];
+                var pubzone = getPubZonesFromXslot(xSlot);
+                result.push(pubzone);
+            })
+            return result.join(' ')
+        }
+
+        function getPubZonesFromXslot(xSlot){
+            var result=[];
+            if(xSlot.hasOwnProperty('pubZone')){
+                var pubZone = xSlot.pubZone;
+                xSlot.sizes.forEach(function(size){
+                    result.push([pubZone, getSize(size)].join('@'));
+                })
+            }
+            return result.join(' ');
+        }
+
+        function getSize(size){
+            return size.join('x');
+        }
+        function onBid(event){
+//            console.log(event);
+        }
+        function onComplete(event){
+//            console.log(event);
+            var data = event[DETAIL];
+            var size = data[RESOURCE].size;
+            var pubZone = data[RESOURCE].pub_zone;
+            var bids = data['clear_prices'];
+            if(bids.length > 0){
+                var winBid = bids[bids.length-1];
+                var demandObj = {};
+                demandObj[targetingKeys.omKey]=size +'_'+200;
+                demandObj[targetingKeys.idKey]=pubZoneHtSlotMap[pubZone];
+
+                demand[pubZoneHtSlotMap[pubZone]]={demand:{}};
+                demand[pubZoneHtSlotMap[pubZone]]["demand"]= demandObj;
+            }
+
+        }
         this.getDemand = function getDemand(correlator, slots, callback) {
             var htSlotNames = Utils.getDivIds(slots);
-
-            __requestDemandForSlots(htSlotNames, function(err, demandForSlots){
+            requestDemandForSlots(htSlotNames, function(err, demandForSlots){
                 if (err) {
                     callback(err);
                     return;
@@ -408,7 +532,9 @@ window.headertag.partnerScopes.push(function() {
                     callback('Error: demandForSlots not set');
                     return;
                 }
-
+                var demand={
+                    slot:{}
+                }
                 for (var htSlotName in demandForSlots) {
                     if (!demandForSlots.hasOwnProperty(htSlotName)) {
                         continue;
@@ -443,20 +569,39 @@ window.headertag.partnerScopes.push(function() {
              * work as-is, but additions may be necessary here if there beacons, tracking
              * pixels etc. that need to be called as well.
              */
-
+            console.log("renderAd function");
+            console.log(targetingMap);
             if (doc && targetingMap && width && height) {
                 try {
-                    var id = targetingMap[__targetingKeys.idKey][0];
-                    
+                    var id = targetingMap[targetingKeys.idKey][0];
                     var sizeKey = width + 'x' + height;
+
                     if (window.headertag.sizeRetargeting && window.headertag.sizeRetargeting[sizeKey]){
                         width = window.headertag.sizeRetargeting[sizeKey][0];
                         height = window.headertag.sizeRetargeting[sizeKey][1];
                     }
-
-                    var ad = __creativeStore[id][width + 'x' + height].ad;
-
-                    doc.write(ad);
+                    var pubZone;
+                    for(var ht in pubZoneHtSlotMap){
+                        if(pubZoneHtSlotMap[ht]==id){
+                            pubZone = ht;
+                            break;
+                        }
+                    }
+                    doc.write('<script>' +
+                        '(function(define){' +
+                        'define(function(a){ ' +
+                        'var id= "cx-ad-" + Math.floor(Math.random() * 1e10), d= document; '+
+                        'd.write(\'<div id="\'+id+\'"></div>\');'+
+                        'a.push({' +
+                        'pub:\''+publisher+'\','+
+                        'pub_zone:\'' +pubZone+'\','+
+                        'sizes:[\''+sizeKey+'\'],' +
+                        'flag: true, ' +
+                        'container: d.getElementById(id),\n' +
+                        '});' +
+                        '})})(function(f){var key=\'uber_imps\',a=this[key]=this[key]||[];f(a);});' +
+                        '</script>' +
+                        '<script src="//c.mbid.io/tags/b"></script>');
                     doc.close();
                     if (doc.defaultView && doc.defaultView.frameElement) {
                         doc.defaultView.frameElement.width = width;
@@ -469,6 +614,7 @@ window.headertag.partnerScopes.push(function() {
 
             }
         };
+
     }
 
     window.headertag.registerPartner(PARTNER_ID, init);
